@@ -104,6 +104,71 @@ class TestEntriesAPI:
         resp = client.delete("/api/entries/fake-id")
         assert resp.status_code == 404
 
+    def test_delete_open_entry(self, client):
+        """An open (punch-in only) entry can be deleted."""
+        resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        entry_id = resp.get_json()["id"]
+        resp = client.delete(f"/api/entries/{entry_id}")
+        assert resp.status_code == 200
+        assert client.get("/api/entries").get_json() == []
+
+    def test_delete_only_target_entry(self, client):
+        """Deleting one entry leaves other entries untouched."""
+        id1 = _post_entry(client, date="2025-03-10").get_json()["id"]
+        id2 = _post_entry(client, date="2025-03-11").get_json()["id"]
+        client.delete(f"/api/entries/{id1}")
+        remaining = client.get("/api/entries").get_json()
+        assert len(remaining) == 1
+        assert remaining[0]["id"] == id2
+
+    def test_delete_reduces_stats(self, client):
+        """Deleting an entry is reflected in stats total hours."""
+        id1 = _post_entry(client, date="2025-03-10").get_json()["id"]
+        _post_entry(client, date="2025-03-11")
+        client.delete(f"/api/entries/{id1}")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["total_hours"] == 8.0
+
+
+class TestPunchInOut:
+    def test_punch_in_creates_open_entry(self, client):
+        resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        assert resp.status_code == 201
+        data = resp.get_json()
+        assert data["clock_in"] == "08:00"
+        assert data["clock_out"] is None
+        assert data["hours"] is None
+
+    def test_punch_in_missing_clock_in(self, client):
+        resp = client.post("/api/entries", json={"date": "2025-03-10"})
+        assert resp.status_code == 400
+
+    def test_open_entry_returned_in_list(self, client):
+        client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        resp = client.get("/api/entries?year=2025&month=3")
+        data = resp.get_json()
+        assert len(data) == 1
+        assert data[0]["clock_out"] is None
+
+    def test_punch_out_completes_open_entry(self, client):
+        punch_resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        entry_id = punch_resp.get_json()["id"]
+        resp = client.put(f"/api/entries/{entry_id}", json={"clock_out": "16:00"})
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["clock_out"] == "16:00"
+        assert data["hours"] == 8.0
+
+    def test_punch_out_nonexistent(self, client):
+        resp = client.put("/api/entries/fake-id", json={"clock_out": "16:00"})
+        assert resp.status_code == 404
+
+    def test_punch_out_before_punch_in(self, client):
+        punch_resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        entry_id = punch_resp.get_json()["id"]
+        resp = client.put(f"/api/entries/{entry_id}", json={"clock_out": "07:00"})
+        assert resp.status_code == 400
+
 
 class TestStatsAPI:
     def test_stats_empty_month(self, client):

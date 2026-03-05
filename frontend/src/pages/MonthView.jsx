@@ -50,6 +50,14 @@ export default function MonthView() {
     load();
   };
 
+  const handleDeleteFromForm = async (entry) => {
+    if (!window.confirm('Delete this entry?')) return;
+    await deleteEntry(entry.id);
+    setShowForm(false);
+    setEditEntry(null);
+    load();
+  };
+
   const handleSave = async (data) => {
     if (editEntry) {
       await updateEntry(editEntry.id, data);
@@ -61,12 +69,35 @@ export default function MonthView() {
     load();
   };
 
+  const nowStr = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const handlePunchIn = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    await createEntry({ date: today, clock_in: nowStr() });
+    load();
+  };
+
+  const handlePunchOut = async (entry) => {
+    await updateEntry(entry.id, { clock_out: nowStr() });
+    load();
+  };
+
   // Group entries by date
   const byDate = {};
   entries.forEach((e) => {
     if (!byDate[e.date]) byDate[e.date] = [];
     byDate[e.date].push(e);
   });
+
+  const todayDateStr = new Date().toISOString().slice(0, 10);
+  const { year: curY, month: curM } = currentYearMonth();
+  const isCurrentMonth = year === curY && month === curM;
+  const todayOpenEntry = isCurrentMonth
+    ? (byDate[todayDateStr] || []).find(e => !e.clock_out)
+    : null;
 
   const numDays = daysInMonth(year, month);
   const startDay = firstDayOfMonth(year, month);
@@ -97,8 +128,8 @@ export default function MonthView() {
         </div>
         <div className="cal-entries">
           {dayEntries.map((entry) => (
-            <div key={entry.id} className="cal-entry" onClick={(e) => handleEditClick(entry, e)}>
-              <span className="cal-entry-time">{entry.clock_in}–{entry.clock_out}</span>
+            <div key={entry.id} className={`cal-entry${!entry.clock_out ? ' cal-entry-open' : ''}`} onClick={(e) => handleEditClick(entry, e)}>
+              <span className="cal-entry-time">{entry.clock_in}{entry.clock_out ? `–${entry.clock_out}` : ' →'}</span>
               <button className="cal-entry-del" onClick={(e) => handleDeleteClick(entry, e)} title="Delete">×</button>
             </div>
           ))}
@@ -110,6 +141,28 @@ export default function MonthView() {
   return (
     <div className="month-view">
       <MonthNav year={year} month={month} onChange={handleMonthChange} />
+
+      {isCurrentMonth && (
+        <div className={`punch-panel ${todayOpenEntry ? 'punch-open' : 'punch-idle'}`}>
+          {todayOpenEntry ? (
+            <>
+              <div className="punch-status">
+                <span className="punch-dot punch-dot-active" />
+                <span className="punch-label">PUNCHED IN AT <strong>{todayOpenEntry.clock_in}</strong></span>
+              </div>
+              <button className="btn-punch btn-punch-out" onClick={() => handlePunchOut(todayOpenEntry)}>PUNCH OUT</button>
+            </>
+          ) : (
+            <>
+              <div className="punch-status">
+                <span className="punch-dot" />
+                <span className="punch-label">NOT PUNCHED IN TODAY</span>
+              </div>
+              <button className="btn-punch btn-punch-in" onClick={handlePunchIn}>PUNCH IN</button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="month-summary">
         <span className="month-total-label">TOTAL</span>
@@ -133,6 +186,7 @@ export default function MonthView() {
           date={selectedDate}
           onSave={handleSave}
           onCancel={() => { setShowForm(false); setEditEntry(null); }}
+          onDelete={handleDeleteFromForm}
         />
       )}
     </div>

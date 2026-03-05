@@ -108,3 +108,16 @@
 .btn-save:hover {
   background: var(--amber-dim);
 }
+
+.btn-delete {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--red, #e05555);
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--red, #e05555);
+  margin-right: auto;
+  transition: all 0.15s;
+}
+.btn-delete:hover {
+  background: var(--red-dim, rgba(224, 85, 85, 0.15));
+}

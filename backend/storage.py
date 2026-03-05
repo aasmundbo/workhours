@@ -62,3 +62,11 @@ def delete_entry(entry_id: str, path: Optional[str] = None) -> bool:
         return False
     save_entries(filtered, path)
     return True
+
+
+def get_entry(entry_id: str, path: Optional[str] = None) -> Optional[dict]:
+    path = _resolve_path(path)
+    for entry in load_entries(path):
+        if str(entry.get("id")) == str(entry_id):
+            return entry
+    return None

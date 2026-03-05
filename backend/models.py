@@ -23,29 +23,47 @@ def validate_date(date_str: str) -> bool:
         return False
 
 
-def create_entry(date: str, clock_in: str, clock_out: str, note: str = "") -> dict:
+def create_entry(date: str, clock_in: str, clock_out: str = None, note: str = "") -> dict:
     if not validate_date(date):
         raise ValueError(f"Invalid date format: {date}. Use YYYY-MM-DD.")
     if not validate_time(clock_in):
         raise ValueError(f"Invalid time format: {clock_in}. Use HH:MM.")
-    if not validate_time(clock_out):
-        raise ValueError(f"Invalid time format: {clock_out}. Use HH:MM.")
 
-    t_in = datetime.strptime(clock_in, "%H:%M")
-    t_out = datetime.strptime(clock_out, "%H:%M")
-    if t_out <= t_in:
-        raise ValueError("Clock-out must be after clock-in.")
-
-    hours = (t_out - t_in).total_seconds() / 3600
+    hours = None
+    if clock_out is not None:
+        if not validate_time(clock_out):
+            raise ValueError(f"Invalid time format: {clock_out}. Use HH:MM.")
+        t_in = datetime.strptime(clock_in, "%H:%M")
+        t_out = datetime.strptime(clock_out, "%H:%M")
+        if t_out <= t_in:
+            raise ValueError("Clock-out must be after clock-in.")
+        hours = round((t_out - t_in).total_seconds() / 3600, 2)
 
     return {
         "id": str(uuid.uuid4()),
         "date": date,
         "clock_in": clock_in,
         "clock_out": clock_out,
-        "hours": round(hours, 2),
+        "hours": hours,
         "note": note,
     }
+
+
+def is_open(entry: dict) -> bool:
+    """Return True if the entry has no clock-out time yet."""
+    return entry.get("clock_out") is None
+
+
+def complete_entry(entry: dict, clock_out: str) -> dict:
+    """Return a new entry dict with clock_out set and hours computed."""
+    if not validate_time(clock_out):
+        raise ValueError(f"Invalid time format: {clock_out}. Use HH:MM.")
+    t_in = datetime.strptime(entry["clock_in"], "%H:%M")
+    t_out = datetime.strptime(clock_out, "%H:%M")
+    if t_out <= t_in:
+        raise ValueError("Clock-out must be after clock-in.")
+    hours = round((t_out - t_in).total_seconds() / 3600, 2)
+    return {**entry, "clock_out": clock_out, "hours": hours}
 
 
 def compute_hours(clock_in: str, clock_out: str) -> float:

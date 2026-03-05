@@ -2,8 +2,8 @@
 
 from flask import Blueprint, jsonify, request
 
-from models import create_entry, compute_hours
-from storage import add_entry, delete_entry, load_entries, update_entry
+from models import complete_entry, compute_hours, create_entry
+from storage import add_entry, delete_entry, get_entry, load_entries, update_entry
 
 entries_bp = Blueprint("entries", __name__)
 
@@ -36,7 +36,7 @@ def create():
         entry = create_entry(
             date=data["date"],
             clock_in=data["clock_in"],
-            clock_out=data["clock_out"],
+            clock_out=data.get("clock_out"),  # Optional — omit for punch-in
             note=data.get("note", ""),
         )
     except (KeyError, ValueError) as e:
@@ -52,7 +52,19 @@ def update(entry_id: str):
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    # Recompute hours if times changed
+    # Punch-out: only clock_out supplied — derive clock_in from stored entry
+    if "clock_out" in data and "clock_in" not in data:
+        existing = get_entry(entry_id)
+        if existing is None:
+            return jsonify({"error": "Entry not found"}), 404
+        try:
+            updated = complete_entry(existing, data["clock_out"])
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        result = update_entry(entry_id, updated)
+        return jsonify(result)
+
+    # Full edit: recompute hours when both times are present
     if "clock_in" in data and "clock_out" in data:
         try:
             data["hours"] = compute_hours(data["clock_in"], data["clock_out"])

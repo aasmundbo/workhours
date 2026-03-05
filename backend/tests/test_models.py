@@ -7,7 +7,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from models import compute_hours, create_entry, validate_date, validate_time
+from models import complete_entry, compute_hours, create_entry, is_open, validate_date, validate_time
 
 
 class TestValidateTime:
@@ -75,3 +75,41 @@ class TestComputeHours:
 
     def test_partial(self):
         assert compute_hours("09:00", "12:30") == 3.5
+
+
+class TestPunchInOut:
+    def test_create_entry_without_clock_out(self):
+        entry = create_entry("2025-03-01", "08:00")
+        assert entry["clock_in"] == "08:00"
+        assert entry["clock_out"] is None
+        assert entry["hours"] is None
+
+    def test_open_entry_is_open(self):
+        entry = create_entry("2025-03-01", "08:00")
+        assert is_open(entry) is True
+
+    def test_completed_entry_is_not_open(self):
+        entry = create_entry("2025-03-01", "08:00", "16:00")
+        assert is_open(entry) is False
+
+    def test_complete_entry(self):
+        entry = create_entry("2025-03-01", "08:00")
+        completed = complete_entry(entry, "16:00")
+        assert completed["clock_out"] == "16:00"
+        assert completed["hours"] == 8.0
+
+    def test_complete_entry_preserves_fields(self):
+        entry = create_entry("2025-03-01", "08:00", note="morning")
+        completed = complete_entry(entry, "16:00")
+        assert completed["note"] == "morning"
+        assert completed["id"] == entry["id"]
+
+    def test_complete_entry_clock_out_before_in(self):
+        entry = create_entry("2025-03-01", "08:00")
+        with pytest.raises(ValueError, match="Clock-out must be after"):
+            complete_entry(entry, "07:00")
+
+    def test_complete_entry_invalid_clock_out(self):
+        entry = create_entry("2025-03-01", "08:00")
+        with pytest.raises(ValueError, match="Invalid time"):
+            complete_entry(entry, "bad")

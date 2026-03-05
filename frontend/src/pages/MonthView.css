@@ -133,3 +133,64 @@
 .cal-has-entry {
   background: var(--bg-surface);
 }
+
+/* Punch panel */
+.punch-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--bg-surface);
+  border-left: 3px solid var(--border);
+}
+.punch-open  { border-left-color: var(--amber); }
+.punch-idle  { border-left-color: var(--border); }
+
+.punch-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.punch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+.punch-dot-active {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+  animation: punchPulse 1.5s ease-in-out infinite;
+}
+@keyframes punchPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.punch-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+.punch-label strong { color: var(--amber); }
+
+.btn-punch {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 0.45rem 1.1rem;
+  transition: all 0.15s;
+}
+.btn-punch-in  { color: var(--bg-deep); background: var(--amber); }
+.btn-punch-in:hover  { background: var(--amber-dim); }
+.btn-punch-out { color: var(--bg-deep); background: var(--amber); }
+.btn-punch-out:hover { background: var(--amber-dim); }
+
+/* Open entry in calendar */
+.cal-entry-open {
+  border-left-color: var(--amber);
+  opacity: 0.8;
+}
