@@ -1,10 +1,13 @@
 """Data models and validation for time entries."""
 
+import re
 import uuid
 from datetime import datetime
 
 
 def validate_time(time_str: str) -> bool:
+    if not re.fullmatch(r"\d{2}:\d{2}", time_str):
+        return False
     try:
         datetime.strptime(time_str, "%H:%M")
         return True
