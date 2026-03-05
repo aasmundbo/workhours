@@ -169,8 +169,50 @@ class TestPunchInOut:
         resp = client.put(f"/api/entries/{entry_id}", json={"clock_out": "07:00"})
         assert resp.status_code == 400
 
+    def test_edit_open_entry_clock_in(self, client):
+        """Editing the clock_in of an open (not yet punched out) entry must succeed."""
+        punch_resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        entry_id = punch_resp.get_json()["id"]
+        resp = client.put(f"/api/entries/{entry_id}", json={"clock_in": "09:00", "clock_out": None})
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["clock_in"] == "09:00"
+        assert data["clock_out"] is None
+        assert data["hours"] is None
+
 
 class TestStatsAPI:
+    def test_stats_with_open_entry(self, client):
+        """Stats must not crash when an open (punch-in only) entry exists."""
+        client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        resp = client.get("/api/stats?year=2025&month=3")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["total_hours"] == 0  # open entry contributes nothing
+
+    def test_stats_open_entry_excluded_from_hours(self, client):
+        """Completed entries count; open entries do not."""
+        _post_entry(client, date="2025-03-10", clock_in="08:00", clock_out="16:00")
+        client.post("/api/entries", json={"date": "2025-03-11", "clock_in": "08:00"})  # open
+        resp = client.get("/api/stats?year=2025&month=3")
+        data = resp.get_json()
+        assert data["total_hours"] == 8.0
+
+    def test_stats_after_delete(self, client):
+        """Deleting an entry is reflected immediately in stats."""
+        id1 = _post_entry(client, date="2025-03-10").get_json()["id"]
+        _post_entry(client, date="2025-03-11")
+        client.delete(f"/api/entries/{id1}")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["total_hours"] == 8.0
+
+    def test_stats_after_edit(self, client):
+        """Editing an entry's times is reflected immediately in stats."""
+        entry_id = _post_entry(client, date="2025-03-10", clock_in="08:00", clock_out="12:00").get_json()["id"]
+        client.put(f"/api/entries/{entry_id}", json={"clock_in": "08:00", "clock_out": "16:00"})
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["total_hours"] == 8.0
+
     def test_stats_empty_month(self, client):
         resp = client.get("/api/stats?year=2025&month=3")
         assert resp.status_code == 200

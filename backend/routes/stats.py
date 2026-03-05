@@ -54,20 +54,20 @@ def get_stats():
         e for e in entries if e["date"].startswith(f"{year:04d}-{month:02d}")
     ]
 
-    # Total hours this month
-    total_hours = sum(e.get("hours", 0) for e in month_entries)
+    # Total hours this month — open entries have hours=None, treat as 0
+    total_hours = sum((e.get("hours") or 0) for e in month_entries)
 
     # Hours per day
     daily = defaultdict(float)
     for e in month_entries:
-        daily[e["date"]] += e.get("hours", 0)
+        daily[e["date"]] += (e.get("hours") or 0)
 
     # Hours per week
     weeks = _weeks_in_month(year, month)
     for e in month_entries:
         wk = _get_iso_week(e["date"])
         if wk in weeks:
-            weeks[wk]["hours"] += e.get("hours", 0)
+            weeks[wk]["hours"] += (e.get("hours") or 0)
 
     week_list = sorted(weeks.values(), key=lambda w: w["week"])
 

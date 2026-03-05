@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import './EntryForm.css';
 
+function getNow() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
 export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
-  // For open entries (punch-in only), default clock_out to empty
   const [clockIn, setClockIn] = useState(entry?.clock_in || '08:00');
-  const [clockOut, setClockOut] = useState(entry ? (entry.clock_out || '') : '16:00');
+  const [clockOut, setClockOut] = useState(entry ? (entry.clock_out || '') : '');
   const [note, setNote] = useState(entry?.note || '');
   const [error, setError] = useState('');
 
@@ -16,15 +20,13 @@ export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
     }
   }, [entry]);
 
-  const isOpenEntry = entry && !entry.clock_out;
-  const title = entry ? (isOpenEntry ? 'PUNCH OUT' : 'EDIT') : 'ADD';
-  const saveLabel = entry ? (isOpenEntry ? 'PUNCH OUT' : 'UPDATE') : 'SAVE';
+  const title = entry ? 'EDIT' : 'ADD';
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
     if (clockOut && clockOut <= clockIn) {
-      setError('Out must be after in.');
+      setError('Clock out must be after clock in.');
       return;
     }
     onSave({
@@ -46,27 +48,33 @@ export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
         {error && <div className="entry-form-error">{error}</div>}
 
         <div className="entry-form-row">
-          <label className="entry-form-label">
+          <div className="entry-form-label">
             <span className="label-text">CLOCK IN</span>
-            <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} required />
-          </label>
-          <label className="entry-form-label">
-            <span className="label-text">CLOCK OUT{!isOpenEntry && !entry ? '' : ' (OPTIONAL)'}</span>
-            <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} />
-          </label>
+            <div className="time-input-group">
+              <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} required />
+              <button type="button" className="btn-now" onClick={() => setClockIn(getNow())}>NOW</button>
+            </div>
+          </div>
+          <div className="entry-form-label">
+            <span className="label-text">CLOCK OUT <span className="label-optional">(OPTIONAL)</span></span>
+            <div className="time-input-group">
+              <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} />
+              <button type="button" className="btn-now" onClick={() => setClockOut(getNow())}>NOW</button>
+            </div>
+          </div>
         </div>
 
-        <label className="entry-form-label">
+        <div className="entry-form-label">
           <span className="label-text">NOTE</span>
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note..." />
-        </label>
+        </div>
 
         <div className="entry-form-actions">
           {entry && onDelete && (
             <button type="button" className="btn-delete" onClick={() => onDelete(entry)}>DELETE</button>
           )}
           <button type="button" className="btn-cancel" onClick={onCancel}>CANCEL</button>
-          <button type="submit" className="btn-save">{saveLabel}</button>
+          <button type="submit" className="btn-save">SAVE</button>
         </div>
       </form>
     </div>

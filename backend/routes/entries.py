@@ -66,10 +66,13 @@ def update(entry_id: str):
 
     # Full edit: recompute hours when both times are present
     if "clock_in" in data and "clock_out" in data:
-        try:
-            data["hours"] = compute_hours(data["clock_in"], data["clock_out"])
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+        if data["clock_out"] is not None:
+            try:
+                data["hours"] = compute_hours(data["clock_in"], data["clock_out"])
+            except ValueError as e:
+                return jsonify({"error": str(e)}), 400
+        else:
+            data["hours"] = None
 
     result = update_entry(entry_id, data)
     if result is None:

@@ -10,24 +10,36 @@ export default function Stats() {
   const [month, setMonth] = useState(initM);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       setStats(await getStats(year, month));
     } catch (e) {
       console.error(e);
+      setError(e.message || 'Failed to load stats.');
     }
     setLoading(false);
   }, [year, month]);
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading || !stats) {
+  if (loading) {
     return (
       <div className="stats-page">
         <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
         <div className="stats-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="stats-page">
+        <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
+        <div className="stats-error">{error || 'No data.'}</div>
       </div>
     );
   }

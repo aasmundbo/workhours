@@ -71,8 +71,42 @@
   color: var(--text-muted);
 }
 
+.label-optional {
+  opacity: 0.55;
+  letter-spacing: 0.1em;
+}
+
+.time-input-group {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.time-input-group input[type='time'] {
+  flex: 1;
+  min-width: 0;
+}
+
 .entry-form-label input {
   width: 100%;
+}
+
+.btn-now {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 0 0.55rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-now:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim, rgba(255, 180, 50, 0.08));
 }
 
 .entry-form-actions {

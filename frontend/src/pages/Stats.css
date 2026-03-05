@@ -11,6 +11,15 @@
   animation: pulse 1.5s infinite;
 }
 
+.stats-error {
+  padding: 1rem 1.25rem;
+  color: var(--red, #e05555);
+  background: var(--red-dim, rgba(224, 85, 85, 0.1));
+  border-left: 3px solid var(--red, #e05555);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
 /* Status banner */
 .status-banner {
   display: flex;
