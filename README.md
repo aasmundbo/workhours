@@ -45,9 +45,13 @@ uv run pytest tests/ -v
 
 ## Data
 
-Hours are stored in `/data/hours.json` inside the Docker volume. Mount a host path to persist across rebuilds:
+Hours are stored in `/data/hours.json` in the backend container. Data persists across rebuilds via a host bind mount:
+
+```bash
+mkdir -p ~/workhours
+```
 
 ```yaml
 volumes:
-  - ./data:/data
+  - ${HOME}/workhours:/data
 ```

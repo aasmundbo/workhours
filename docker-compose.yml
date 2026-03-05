@@ -4,7 +4,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - hours_data:/data
+      - ${HOME}/workhours:/data
     environment:
       - DATA_FILE=/data/hours.json
     restart: unless-stopped
@@ -28,6 +28,3 @@ services:
       - backend
       - frontend
     restart: unless-stopped
-
-volumes:
-  hours_data:
