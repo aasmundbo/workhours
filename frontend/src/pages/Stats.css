@@ -1,0 +1,230 @@
+.stats-page {
+  animation: fadeIn 0.3s ease;
+}
+
+.stats-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  animation: pulse 1.5s infinite;
+}
+
+/* Status banner */
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid;
+}
+.status-on-track {
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+.status-behind {
+  background: var(--red-dim);
+  border-color: var(--red);
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+.status-on-track .status-icon { color: var(--green); }
+.status-behind .status-icon { color: var(--red); animation: pulse 2s infinite; }
+
+.status-label {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+.status-on-track .status-label { color: var(--green); }
+.status-behind .status-label { color: var(--red); }
+
+.status-detail {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+/* Metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  background: var(--bg-surface);
+  padding: 1.25rem 1rem;
+}
+
+.metric-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.metric-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+/* Progress bar */
+.progress-section {
+  background: var(--bg-surface);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+.progress-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+}
+
+.progress-pct {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.progress-bar {
+  position: relative;
+  height: 10px;
+  background: var(--bg-deep);
+  overflow: visible;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--amber);
+  transition: width 0.6s ease;
+}
+
+.progress-expected {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 16px;
+  background: var(--text-muted);
+  transition: left 0.6s ease;
+}
+
+.progress-legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  vertical-align: middle;
+  margin-right: 0.3rem;
+}
+.legend-actual { background: var(--amber); }
+.legend-expected { background: var(--text-muted); }
+
+/* Weekly breakdown */
+.weekly-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+}
+
+.section-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.weekly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.week-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: slideIn 0.3s ease both;
+}
+
+.week-label {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.week-id {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.week-range {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.week-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.week-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-deep);
+}
+
+.week-bar-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+.week-bar-met { background: var(--green); }
+.week-bar-short { background: var(--amber-dim); }
+
+.week-hours {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex: 0 0 50px;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+  .week-label { flex: 0 0 120px; }
+}
