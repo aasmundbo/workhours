@@ -47,6 +47,7 @@
 ## Testing and validation expectations
 - For backend logic/API changes, update or add focused tests in `backend/tests/`.
 - Prefer minimal, targeted test additions near changed behavior.
+- After any code change, run the relevant test suite(s) and only consider work complete when all tests pass.
 - If README commands or behavior changes, keep `README.md` aligned.
 
 ## Scope guardrails
@@ -56,6 +57,6 @@
 
 ## Agent checklist before finishing
 - Did API field names remain consistent across backend + frontend?
-- Did changed backend behavior pass `pytest tests/ -v`?
+- Did changed backend behavior pass `pytest tests/ -v` with all tests passing?
 - Did Docker/local run instructions remain accurate in `README.md`?
 - Are changes limited to the requested scope?

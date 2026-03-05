@@ -2,70 +2,63 @@
 
 import json
 import os
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
-DATA_DIR = os.environ.get("DATA_DIR", "/data")
-DATA_FILE = os.path.join(DATA_DIR, "entries.json")
+DEFAULT_PATH = os.environ.get("DATA_FILE", "/data/hours.json")
 
 
-def _ensure_file():
-    Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w") as f:
+def _resolve_path(path: Optional[str] = None) -> str:
+    return path or DEFAULT_PATH
+
+
+def _ensure_file(path: Optional[str] = None) -> None:
+    path = _resolve_path(path)
+    Path(os.path.dirname(path) or ".").mkdir(parents=True, exist_ok=True)
+    if not os.path.exists(path):
+        with open(path, "w") as f:
             json.dump({"entries": []}, f)
 
 
-def _read_all() -> dict:
-    _ensure_file()
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+def load_entries(path: Optional[str] = None) -> list[dict]:
+    path = _resolve_path(path)
+    _ensure_file(path)
+    with open(path, "r") as f:
+        data = json.load(f)
+    return data.get("entries", [])
 
 
-def _write_all(data: dict):
-    _ensure_file()
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+def save_entries(entries: list[dict], path: Optional[str] = None) -> None:
+    path = _resolve_path(path)
+    _ensure_file(path)
+    with open(path, "w") as f:
+        json.dump({"entries": entries}, f, indent=2)
 
 
-def get_entries(year: int, month: int) -> list[dict]:
-    data = _read_all()
-    return [e for e in data["entries"] if e["year"] == year and e["month"] == month]
-
-
-def get_all_entries() -> list[dict]:
-    return _read_all()["entries"]
-
-
-def add_entry(entry: dict) -> dict:
-    data = _read_all()
-    entry["id"] = _next_id(data["entries"])
-    data["entries"].append(entry)
-    _write_all(data)
+def add_entry(entry: dict, path: Optional[str] = None) -> dict:
+    path = _resolve_path(path)
+    entries = load_entries(path)
+    entries.append(entry)
+    save_entries(entries, path)
     return entry
 
 
-def update_entry(entry_id: int, updates: dict) -> Optional[dict]:
-    data = _read_all()
-    for i, e in enumerate(data["entries"]):
-        if e["id"] == entry_id:
-            data["entries"][i] = {**e, **updates, "id": entry_id}
-            _write_all(data)
-            return data["entries"][i]
+def update_entry(entry_id: str, updates: dict, path: Optional[str] = None) -> Optional[dict]:
+    path = _resolve_path(path)
+    entries = load_entries(path)
+    for i, entry in enumerate(entries):
+        if str(entry.get("id")) == str(entry_id):
+            entries[i] = {**entry, **updates, "id": entry.get("id")}
+            save_entries(entries, path)
+            return entries[i]
     return None
 
 
-def delete_entry(entry_id: int) -> bool:
-    data = _read_all()
-    original_len = len(data["entries"])
-    data["entries"] = [e for e in data["entries"] if e["id"] != entry_id]
-    if len(data["entries"]) < original_len:
-        _write_all(data)
-        return True
-    return False
-
-
-def _next_id(entries: list[dict]) -> int:
-    if not entries:
-        return 1
-    return max(e["id"] for e in entries) + 1
+def delete_entry(entry_id: str, path: Optional[str] = None) -> bool:
+    path = _resolve_path(path)
+    entries = load_entries(path)
+    filtered = [entry for entry in entries if str(entry.get("id")) != str(entry_id)]
+    if len(filtered) == len(entries):
+        return False
+    save_entries(filtered, path)
+    return True

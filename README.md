@@ -35,6 +35,8 @@ Open **http://localhost:8080**
 
 ## Testing
 
+After any code change, run the relevant test suite(s) and only consider the work complete when all tests pass.
+
 ```bash
 cd backend
 pip install -r requirements.txt
