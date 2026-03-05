@@ -5,7 +5,7 @@ A self-hosted Docker web app for tracking your work hours when your employer doe
 ## Quick Start
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 Open **http://localhost:8080**
