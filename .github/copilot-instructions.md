@@ -17,8 +17,8 @@
   - Open `http://localhost:8080`
 - Backend tests:
   - `cd backend`
-  - `pip install -r requirements.txt`
-  - `pytest tests/ -v`
+  - `uv sync`
+  - `uv run pytest tests/ -v`
 - Frontend local dev:
   - `cd frontend`
   - `npm install`
@@ -57,6 +57,6 @@
 
 ## Agent checklist before finishing
 - Did API field names remain consistent across backend + frontend?
-- Did changed backend behavior pass `pytest tests/ -v` with all tests passing?
+- Did changed backend behavior pass `uv run pytest tests/ -v` with all tests passing?
 - Did Docker/local run instructions remain accurate in `README.md`?
 - Are changes limited to the requested scope?

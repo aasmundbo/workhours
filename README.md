@@ -39,8 +39,8 @@ After any code change, run the relevant test suite(s) and only consider the work
 
 ```bash
 cd backend
-pip install -r requirements.txt
-pytest tests/ -v
+uv sync
+uv run pytest tests/ -v
 ```
 
 ## Data

@@ -2,8 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+COPY pyproject.toml uv.lock ./
+RUN uv export --frozen --no-dev --format requirements-txt --output-file requirements.txt \
+	&& uv pip install --system --no-cache -r requirements.txt \
+	&& rm requirements.txt
 
 COPY . .
 
