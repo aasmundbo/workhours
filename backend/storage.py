@@ -31,8 +31,11 @@ def load_entries(path: Optional[str] = None) -> list[dict]:
 def save_entries(entries: list[dict], path: Optional[str] = None) -> None:
     path = _resolve_path(path)
     _ensure_file(path)
+    with open(path, "r") as f:
+        data = json.load(f)
+    data["entries"] = entries
     with open(path, "w") as f:
-        json.dump({"entries": entries}, f, indent=2)
+        json.dump(data, f, indent=2)
 
 
 def add_entry(entry: dict, path: Optional[str] = None) -> dict:
@@ -70,3 +73,39 @@ def get_entry(entry_id: str, path: Optional[str] = None) -> Optional[dict]:
         if str(entry.get("id")) == str(entry_id):
             return entry
     return None
+
+
+def load_off_days(path: Optional[str] = None) -> list[str]:
+    path = _resolve_path(path)
+    _ensure_file(path)
+    with open(path, "r") as f:
+        data = json.load(f)
+    return data.get("off_days", [])
+
+
+def save_off_days(off_days: list[str], path: Optional[str] = None) -> None:
+    path = _resolve_path(path)
+    _ensure_file(path)
+    with open(path, "r") as f:
+        data = json.load(f)
+    data["off_days"] = sorted(set(off_days))
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def add_off_day(date: str, path: Optional[str] = None) -> None:
+    """Mark a date as a no-work day (idempotent)."""
+    off_days = load_off_days(path)
+    if date not in off_days:
+        off_days.append(date)
+    save_off_days(off_days, path)
+
+
+def remove_off_day(date: str, path: Optional[str] = None) -> bool:
+    """Unmark a date. Returns False if it was not marked."""
+    off_days = load_off_days(path)
+    if date not in off_days:
+        return False
+    off_days.remove(date)
+    save_off_days(off_days, path)
+    return True

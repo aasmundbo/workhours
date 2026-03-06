@@ -489,3 +489,130 @@ class TestWorkScheduleEnvVars:
         assert data["week_elapsed_workdays"] == 3
         assert data["week_target_so_far"] == 24.0  # 3 × 8h
         assert data["week_difference"] == 24.0 - 24.0
+
+
+class TestOffDaysAPI:
+    """Tests for GET/POST/DELETE /api/off-days."""
+
+    def test_get_off_days_empty(self, client):
+        resp = client.get("/api/off-days?year=2025&month=3")
+        assert resp.status_code == 200
+        assert resp.get_json() == []
+
+    def test_add_off_day(self, client):
+        resp = client.post("/api/off-days", json={"date": "2025-03-17"})
+        assert resp.status_code == 201
+        assert resp.get_json()["date"] == "2025-03-17"
+
+    def test_add_off_day_idempotent(self, client):
+        """Posting the same date twice results in a single entry."""
+        client.post("/api/off-days", json={"date": "2025-03-17"})
+        client.post("/api/off-days", json={"date": "2025-03-17"})
+        data = client.get("/api/off-days?year=2025&month=3").get_json()
+        assert data.count("2025-03-17") == 1
+
+    def test_add_off_day_invalid_date(self, client):
+        resp = client.post("/api/off-days", json={"date": "not-a-date"})
+        assert resp.status_code == 400
+
+    def test_add_off_day_missing_date(self, client):
+        resp = client.post("/api/off-days", json={})
+        assert resp.status_code == 400
+
+    def test_delete_off_day(self, client):
+        client.post("/api/off-days", json={"date": "2025-03-17"})
+        resp = client.delete("/api/off-days/2025-03-17")
+        assert resp.status_code == 200
+        assert client.get("/api/off-days?year=2025&month=3").get_json() == []
+
+    def test_delete_off_day_not_found(self, client):
+        resp = client.delete("/api/off-days/2025-03-17")
+        assert resp.status_code == 404
+
+    def test_get_off_days_filtered_by_month(self, client):
+        """Only off days matching the queried month are returned."""
+        client.post("/api/off-days", json={"date": "2025-03-17"})
+        client.post("/api/off-days", json={"date": "2025-04-01"})
+        data = client.get("/api/off-days?year=2025&month=3").get_json()
+        assert data == ["2025-03-17"]
+
+    def test_get_off_days_unfiltered(self, client):
+        """Without year/month params all off days are returned."""
+        client.post("/api/off-days", json={"date": "2025-03-17"})
+        client.post("/api/off-days", json={"date": "2025-04-01"})
+        data = client.get("/api/off-days").get_json()
+        assert len(data) == 2
+
+
+class TestOffDayStats:
+    """Stats calculations correctly reflect off days."""
+    # March 2025: first workday = Mon Mar 3. 21 workdays total.
+    # January 2025: Jan 1 = Wed (W01). 23 workdays total.
+
+    def test_stats_response_includes_off_days_key(self, client):
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert "off_days" in data
+
+    def test_off_day_reduces_total_workdays(self, client):
+        """Marking a workday as off reduces total_workdays by 1."""
+        client.post("/api/off-days", json={"date": "2025-01-01"})  # Jan 1 = Wed
+        data = client.get("/api/stats?year=2025&month=1").get_json()
+        assert data["total_workdays"] == 22  # Jan 2025 has 23 workdays normally
+
+    def test_off_day_reduces_target_hours(self, client):
+        """target_hours shrinks by hours_per_day when a workday is marked off."""
+        client.post("/api/off-days", json={"date": "2025-01-01"})
+        data = client.get("/api/stats?year=2025&month=1").get_json()
+        assert data["target_hours"] == 22 * 8.0
+
+    def test_hours_on_off_day_still_counted(self, client):
+        """Hours logged on an off day contribute to total_hours but not to expected."""
+        client.post("/api/off-days", json={"date": "2025-03-03"})  # Mon
+        _post_entry(client, date="2025-03-03")  # 8h on that day
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["total_hours"] == 8.0       # logged hours count
+        assert data["elapsed_workdays"] == 0    # off day doesn't count as elapsed
+        assert data["difference"] == 8.0        # 8h logged vs 0h expected = ahead
+
+    def test_off_day_reduces_elapsed_workdays(self, client):
+        """An off day in the middle of logged days is skipped in elapsed count."""
+        # Mon Mar 3, Tue Mar 4 (off), Wed Mar 5 — last completed = Wed
+        for day in (3, 4, 5):
+            _post_entry(client, date=f"2025-03-{day:02d}")
+        client.post("/api/off-days", json={"date": "2025-03-04"})  # Tue = off
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        # Mar 1=Sat, Mar 2=Sun, Mar 3=Mon(+1), Mar 4=Tue(off, skip), Mar 5=Wed(+1)
+        assert data["elapsed_workdays"] == 2
+        assert data["expected_so_far"] == 16.0
+        assert data["difference"] == 8.0  # 24h logged vs 16h expected (Tue hours are a bonus)
+
+    def test_off_day_on_weekend_has_no_effect(self, client):
+        """Marking a weekend day as off does not change workday counts."""
+        client.post("/api/off-days", json={"date": "2025-03-01"})  # Saturday
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["total_workdays"] == 21  # March 2025 has 21 workdays, unchanged
+
+    def test_off_day_reduces_weekly_target(self, client):
+        """A workday off within a week reduces that week's target."""
+        client.post("/api/off-days", json={"date": "2025-01-01"})  # Jan 1 = Wed in W01
+        data = client.get("/api/stats?year=2025&month=1").get_json()
+        w01 = next(w for w in data["weekly"] if w["week"] == "2025-W01")
+        assert w01["target"] == 32.0  # 40 - 8 (one off day)
+
+    def test_off_day_listed_in_stats_response(self, client):
+        """off_days in the stats response matches what was submitted."""
+        client.post("/api/off-days", json={"date": "2025-03-17"})
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert "2025-03-17" in data["off_days"]
+
+    def test_week_off_day_reduces_week_elapsed_and_target_so_far(self, client):
+        """Off day in current week is excluded from week_elapsed_workdays."""
+        client.post("/api/off-days", json={"date": "2025-01-28"})  # Tue of W05
+        # Log Mon Jan 27 and Wed Jan 29 (Tue is off)
+        _post_entry(client, date="2025-01-27")
+        _post_entry(client, date="2025-01-29")
+        data = client.get("/api/stats?year=2025&month=1").get_json()
+        # week_cutoff = Jan 29; eligible days ≤ Jan 29: Mon(+1), Tue(off,skip), Wed(+1) = 2
+        assert data["week_elapsed_workdays"] == 2
+        assert data["week_target_so_far"] == 16.0  # 2 × 8h
+        assert data["week_difference"] == 0.0       # 16h logged vs 16h expected

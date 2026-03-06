@@ -10,7 +10,7 @@ import pytest
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from storage import add_entry, delete_entry, load_entries, save_entries, update_entry
+from storage import add_entry, delete_entry, load_entries, save_entries, update_entry, load_off_days, add_off_day, remove_off_day
 
 
 @pytest.fixture
@@ -82,3 +82,49 @@ class TestDeleteEntry:
 
     def test_returns_false_for_missing(self, tmp_file):
         assert delete_entry("nonexistent", tmp_file) is False
+
+
+class TestSaveEntriesPreservesOffDays:
+    def test_save_entries_preserves_off_days(self, tmp_file):
+        """save_entries must not overwrite the off_days key."""
+        add_off_day("2025-03-17", tmp_file)
+        entries = [{"id": "1", "date": "2025-03-17"}]
+        save_entries(entries, tmp_file)
+        assert load_off_days(tmp_file) == ["2025-03-17"]
+        assert load_entries(tmp_file) == entries
+
+    def test_save_entries_multiple_round_trips(self, tmp_file):
+        """Repeated save_entries calls don't lose off_days."""
+        add_off_day("2025-01-01", tmp_file)
+        save_entries([{"id": "1"}], tmp_file)
+        save_entries([{"id": "2"}], tmp_file)
+        assert load_off_days(tmp_file) == ["2025-01-01"]
+        assert load_entries(tmp_file)[0]["id"] == "2"
+
+
+class TestOffDayStorage:
+    def test_load_off_days_empty(self, tmp_file):
+        assert load_off_days(tmp_file) == []
+
+    def test_add_off_day(self, tmp_file):
+        add_off_day("2025-03-17", tmp_file)
+        assert "2025-03-17" in load_off_days(tmp_file)
+
+    def test_add_off_day_idempotent(self, tmp_file):
+        add_off_day("2025-03-17", tmp_file)
+        add_off_day("2025-03-17", tmp_file)
+        assert load_off_days(tmp_file).count("2025-03-17") == 1
+
+    def test_off_days_stored_sorted(self, tmp_file):
+        add_off_day("2025-03-20", tmp_file)
+        add_off_day("2025-03-10", tmp_file)
+        days = load_off_days(tmp_file)
+        assert days == sorted(days)
+
+    def test_remove_off_day(self, tmp_file):
+        add_off_day("2025-03-17", tmp_file)
+        assert remove_off_day("2025-03-17", tmp_file) is True
+        assert load_off_days(tmp_file) == []
+
+    def test_remove_off_day_not_found(self, tmp_file):
+        assert remove_off_day("2025-03-17", tmp_file) is False

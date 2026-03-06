@@ -178,6 +178,35 @@
   background: var(--bg-surface);
 }
 
+/* Off-day (holiday / no-work) marker */
+.cal-off-day {
+  background: color-mix(in srgb, var(--bg-deep) 80%, var(--red-dim, rgba(224,85,85,0.15)) 20%);
+  border-top: 2px solid var(--red, #e05555);
+  opacity: 0.85;
+}
+.cal-off-day:hover { opacity: 1; }
+
+.cal-day-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cal-off-btn {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.1s, color 0.1s;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.cal-cell:hover .cal-off-btn { opacity: 0.5; }
+.cal-off-btn:hover { opacity: 1 !important; color: var(--red, #e05555); }
+.cal-off-btn-on { opacity: 1 !important; color: var(--red, #e05555); }
+
 /* Punch panel */
 .punch-panel {
   display: flex;

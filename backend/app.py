@@ -3,6 +3,7 @@
 from flask import Flask, send_from_directory
 
 from routes.entries import entries_bp
+from routes.off_days import off_days_bp
 from routes.stats import stats_bp
 
 
@@ -10,6 +11,7 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder="/app/frontend/dist", static_url_path="/")
 
     app.register_blueprint(entries_bp)
+    app.register_blueprint(off_days_bp)
     app.register_blueprint(stats_bp)
 
     @app.route("/")

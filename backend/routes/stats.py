@@ -7,7 +7,7 @@ from calendar import monthrange
 
 from flask import Blueprint, jsonify, request
 
-from storage import load_entries
+from storage import load_entries, load_off_days
 
 stats_bp = Blueprint("stats", __name__)
 
@@ -70,6 +70,12 @@ def get_stats():
         e for e in entries if e["date"].startswith(f"{year:04d}-{month:02d}")
     ]
 
+    # Off days for this month — excluded from expected-hours targets, but hours
+    # logged on them still count toward total_hours.
+    month_prefix = f"{year:04d}-{month:02d}"
+    off_days_month = [d for d in load_off_days() if d.startswith(month_prefix)]
+    off_days_set = set(off_days_month)
+
     # Total hours this month — open entries have hours=None, treat as 0
     total_hours = sum((e.get("hours") or 0) for e in month_entries)
 
@@ -87,12 +93,22 @@ def get_stats():
 
     week_list = sorted(weeks.values(), key=lambda w: w["week"])
 
-    # Working days info
+    # Reduce each week's target by hours_per_day for every off day in that week.
+    for w in week_list:
+        off_in_week = sum(
+            1 for od in off_days_month
+            if w["start"] <= od <= w["end"]
+            and _is_workday(datetime.strptime(od, "%Y-%m-%d"), work_days_per_week)
+        )
+        w["target"] = round(max(0.0, w["target"] - off_in_week * hours_per_day), 4)
+
+    # Working days info — off days on workdays are excluded from the target pool.
     _, num_days = monthrange(year, month)
     total_workdays = sum(
         1
         for d in range(1, num_days + 1)
         if _is_workday(datetime(year, month, d), work_days_per_week)
+        and f"{year:04d}-{month:02d}-{d:02d}" not in off_days_set
     )
 
     today = datetime.now()
@@ -110,6 +126,7 @@ def get_stats():
             1
             for d in range(1, last_completed.day + 1)
             if _is_workday(datetime(year, month, d), work_days_per_week)
+            and f"{year:04d}-{month:02d}-{d:02d}" not in off_days_set
         )
     else:
         elapsed_workdays = 0
@@ -149,6 +166,7 @@ def get_stats():
                 1
                 for i in range(work_days_per_week)
                 if (week_start + timedelta(days=i)) <= week_cutoff
+                and (week_start + timedelta(days=i)).strftime("%Y-%m-%d") not in off_days_set
             )
         else:
             week_elapsed_workdays = 0
@@ -162,6 +180,7 @@ def get_stats():
         "hours_per_day": round(hours_per_day, 4),
         "hours_per_week": hours_per_week,
         "work_days_per_week": work_days_per_week,
+        "off_days": off_days_month,
         "total_hours": round(total_hours, 2),
         "target_hours": round(target_hours, 2),
         "expected_so_far": round(expected_so_far, 2),
@@ -172,7 +191,7 @@ def get_stats():
         "week_difference": round(week_difference, 2),
         "week_total_hours": round(week_total_hours, 2),
         "week_elapsed_workdays": week_elapsed_workdays,
-        "week_target_so_far": week_target_so_far,
+        "week_target_so_far": round(week_target_so_far, 2),
         "current_week": current_week_key,
         "daily": dict(sorted(daily.items())),
         "weekly": week_list,

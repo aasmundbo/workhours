@@ -31,3 +31,15 @@ export function deleteEntry(id) {
 export function getStats(year, month) {
   return request(`/stats?year=${year}&month=${month}`);
 }
+
+export function getOffDays(year, month) {
+  return request(`/off-days?year=${year}&month=${month}`);
+}
+
+export function addOffDay(date) {
+  return request('/off-days', { method: 'POST', body: JSON.stringify({ date }) });
+}
+
+export function removeOffDay(date) {
+  return request(`/off-days/${date}`, { method: 'DELETE' });
+}

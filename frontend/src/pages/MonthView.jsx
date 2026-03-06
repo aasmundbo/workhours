@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import MonthNav from '../components/MonthNav';
 import EntryForm from '../components/EntryForm';
-import { getEntries, createEntry, updateEntry, deleteEntry } from '../api/client';
+import { getEntries, createEntry, updateEntry, deleteEntry, getOffDays, addOffDay, removeOffDay } from '../api/client';
 import { currentYearMonth, daysInMonth, firstDayOfMonth, isWeekend, formatHours } from '../utils/dates';
 import './MonthView.css';
 
@@ -10,6 +10,7 @@ export default function MonthView() {
   const [year, setYear] = useState(initY);
   const [month, setMonth] = useState(initM);
   const [entries, setEntries] = useState([]);
+  const [offDays, setOffDays] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
@@ -18,8 +19,12 @@ export default function MonthView() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getEntries(year, month);
+      const [data, offs] = await Promise.all([
+        getEntries(year, month),
+        getOffDays(year, month),
+      ]);
       setEntries(data);
+      setOffDays(new Set(offs));
     } catch (e) {
       console.error(e);
     }
@@ -55,6 +60,16 @@ export default function MonthView() {
     await deleteEntry(entry.id);
     setShowForm(false);
     setEditEntry(null);
+    load();
+  };
+
+  const handleOffDayToggle = async (dateStr, e) => {
+    e.stopPropagation();
+    if (offDays.has(dateStr)) {
+      await removeOffDay(dateStr);
+    } else {
+      await addOffDay(dateStr);
+    }
     load();
   };
 
@@ -115,16 +130,26 @@ export default function MonthView() {
     const dayHours = dayEntries.reduce((s, e) => s + (e.hours || 0), 0);
     const weekend = isWeekend(year, month, d);
     const today = dateStr === new Date().toISOString().slice(0, 10);
+    const isOffDay = offDays.has(dateStr);
 
     cells.push(
       <div
         key={d}
-        className={`cal-cell ${weekend ? 'cal-weekend' : ''} ${today ? 'cal-today' : ''} ${dayEntries.length ? 'cal-has-entry' : ''}`}
+        className={`cal-cell ${weekend ? 'cal-weekend' : ''} ${today ? 'cal-today' : ''} ${dayEntries.length ? 'cal-has-entry' : ''} ${isOffDay ? 'cal-off-day' : ''}`}
         onClick={() => handleDayClick(dateStr)}
       >
         <div className="cal-day-header">
           <span className={`cal-day-num ${today ? 'today-num' : ''}`}>{d}</span>
-          {dayHours > 0 && <span className="cal-day-hours">{formatHours(dayHours)}</span>}
+          <div className="cal-day-meta">
+            {dayHours > 0 && <span className="cal-day-hours">{formatHours(dayHours)}</span>}
+            {!weekend && (
+              <button
+                className={`cal-off-btn${isOffDay ? ' cal-off-btn-on' : ''}`}
+                onClick={(e) => handleOffDayToggle(dateStr, e)}
+                title={isOffDay ? 'Remove no-work marker' : 'Mark as no work (holiday)'}
+              >⊘</button>
+            )}
+          </div>
         </div>
         <div className="cal-entries">
           {dayEntries.map((entry) => (
