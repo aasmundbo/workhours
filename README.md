@@ -4,6 +4,23 @@ A self-hosted Docker web app for tracking your work hours when your employer doe
 
 ## Quick Start
 
+### Data
+
+Hours are stored in `/data/hours.json` in the backend container. Data persists across rebuilds via a host bind mount:
+
+```bash
+mkdir -p ~/workhours
+```
+
+The mapping to the host bind mount is done in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ${HOME}/workhours:/data
+```
+
+### Start Web App
+
 ```bash
 docker compose up --build
 ```
@@ -47,17 +64,4 @@ After any code change, run the relevant test suite(s) and only consider the work
 cd backend
 uv sync
 uv run pytest tests/ -v
-```
-
-## Data
-
-Hours are stored in `/data/hours.json` in the backend container. Data persists across rebuilds via a host bind mount:
-
-```bash
-mkdir -p ~/workhours
-```
-
-```yaml
-volumes:
-  - ${HOME}/workhours:/data
 ```
