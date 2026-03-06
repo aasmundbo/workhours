@@ -5,6 +5,9 @@ services:
       - "5000:5000"
     volumes:
       - ${HOME}/workhours:/data
+    env_file:
+      - path: .env
+        required: false
     environment:
       - DATA_FILE=/data/hours.json
     restart: unless-stopped

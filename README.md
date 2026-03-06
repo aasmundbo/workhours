@@ -4,7 +4,7 @@ A self-hosted Docker web app for tracking your work hours when your employer doe
 
 ## Quick Start
 
-### Data
+### 1. Create the data directory
 
 Hours are stored in `/data/hours.json` in the backend container. Data persists across rebuilds via a host bind mount:
 
@@ -12,14 +12,24 @@ Hours are stored in `/data/hours.json` in the backend container. Data persists a
 mkdir -p ~/workhours
 ```
 
-The mapping to the host bind mount is done in `docker-compose.yml`:
+### 2. Configure your work schedule
 
-```yaml
-volumes:
-  - ${HOME}/workhours:/data
+Copy the default config and edit it to match your contract:
+
+```bash
+cp .env.default .env
 ```
 
-### Start Web App
+Open `.env` and set your values:
+
+| Variable | Default | Description |
+|---|---|---|
+| `WORK_HOURS_PER_WEEK` | `40` | Total contracted hours per week |
+| `WORK_DAYS_PER_WEEK` | `5` | Working days per week (Mon onwards — `5`=Mon–Fri, `4`=Mon–Thu, etc.) |
+
+> `.env` is git-ignored. Never commit it.
+
+### 3. Start the app
 
 ```bash
 docker compose up --build

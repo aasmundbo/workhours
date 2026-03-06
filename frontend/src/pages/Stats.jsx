@@ -102,7 +102,7 @@ export default function Stats() {
           <div className="metric-value">
             {stats.elapsed_workdays > 0 ? formatHours(stats.total_hours / stats.elapsed_workdays) : '0h'}
           </div>
-          <div className="metric-sub">target: 8h/day</div>
+          <div className="metric-sub">target: {formatHours(stats.hours_per_day)}/day</div>
         </div>
       </div>
 

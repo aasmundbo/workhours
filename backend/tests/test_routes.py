@@ -388,3 +388,104 @@ class TestStatsAPI:
         assert data["week_total_hours"] == 0.0
         assert data["week_elapsed_workdays"] == 0
         assert data["week_difference"] == 0.0
+
+
+class TestWorkScheduleEnvVars:
+    """Tests for WORK_HOURS_PER_WEEK / WORK_DAYS_PER_WEEK env var support.
+
+    Uses March 2025 (Mon 3 – Fri 7 for week W10) and January 2025 W05 (Mon 27 – Fri 31).
+    """
+
+    def test_default_schedule_is_40h_5d(self, client):
+        """Defaults produce 8h/day and 5-day weeks with no env vars set."""
+        for day in range(3, 8):  # Mon-Fri Mar 3-7
+            _post_entry(client, date=f"2025-03-{day:02d}")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["target_hours"] == 21 * 8  # March has 21 workdays
+        assert data["hours_per_day"] == 8.0
+        assert data["hours_per_week"] == 40.0
+        assert data["work_days_per_week"] == 5
+        # Weekly target in the weekly list
+        w10 = next(w for w in data["weekly"] if w["week"] == "2025-W10")
+        assert w10["target"] == 40.0
+
+    def test_schedule_fields_in_response(self, client):
+        """Response always includes hours_per_day, hours_per_week, work_days_per_week."""
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert "hours_per_day" in data
+        assert "hours_per_week" in data
+        assert "work_days_per_week" in data
+
+    def test_custom_schedule_fields_in_response(self, client, monkeypatch):
+        """Custom env vars are reflected in the schedule fields of the response."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "36")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "4")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["hours_per_week"] == 36.0
+        assert data["work_days_per_week"] == 4
+        assert data["hours_per_day"] == 9.0  # 36 / 4
+
+    def test_custom_32h_4day_week_target(self, client, monkeypatch):
+        """32h / 4-day week → 8h/day target, Friday excluded from workday count."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "32")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "4")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        # March 2025: Mon-Thu only (weekday < 4). Count Mon-Thu days in March.
+        expected_workdays = sum(
+            1 for d in range(1, 32)
+            if __import__("datetime").datetime(2025, 3, d).weekday() < 4
+        )
+        assert data["total_workdays"] == expected_workdays
+        assert data["target_hours"] == expected_workdays * 8.0  # 32h/4d = 8h/day
+
+    def test_custom_schedule_excludes_friday(self, client, monkeypatch):
+        """With WORK_DAYS_PER_WEEK=4, Fridays are not counted as workdays."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "32")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "4")
+        # Log Mon-Fri (5 entries); Fri should not advance elapsed_workdays
+        for day in range(3, 8):
+            _post_entry(client, date=f"2025-03-{day:02d}")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        # last completed = Fri Mar 7, but Fri is not a workday → elapsed = Mon-Thu = 4
+        assert data["elapsed_workdays"] == 4
+        assert data["expected_so_far"] == 32.0  # 4 days × 8h
+
+    def test_custom_schedule_difference_exact(self, client, monkeypatch):
+        """Pace difference is computed with custom hours_per_day."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "20")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "5")
+        # Log Mon only: 4h (half a 4h/day target)
+        _post_entry(client, date="2025-03-03", clock_in="09:00", clock_out="13:00")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["elapsed_workdays"] == 1
+        assert data["expected_so_far"] == 4.0   # 20h / 5d = 4h/day
+        assert data["difference"] == 0.0        # 4h logged == 4h expected
+
+    def test_custom_schedule_week_target_in_list(self, client, monkeypatch):
+        """Weekly list entries carry the configured WORK_HOURS_PER_WEEK as their target."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "32")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "4")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        for w in data["weekly"]:
+            assert w["target"] == 32.0
+
+    def test_custom_schedule_week_end_is_thursday(self, client, monkeypatch):
+        """With WORK_DAYS_PER_WEEK=4, each week's end date is Thursday (Mon+3)."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "32")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "4")
+        data = client.get("/api/stats?year=2025&month=1").get_json()
+        # W05: Mon=Jan 27 → Thu=Jan 30
+        w05 = next(w for w in data["weekly"] if w["week"] == "2025-W05")
+        assert w05["end"] == "2025-01-30"
+
+    def test_custom_week_elapsed_capped_at_last_completed(self, client, monkeypatch):
+        """Week elapsed pays attention to the custom workday count (4d)."""
+        monkeypatch.setenv("WORK_HOURS_PER_WEEK", "32")
+        monkeypatch.setenv("WORK_DAYS_PER_WEEK", "4")
+        # Log Mon-Wed of 2025-W05 → last completed Wed Jan 29 → 3 elapsed workdays
+        for day in (27, 28, 29):
+            _post_entry(client, date=f"2025-01-{day:02d}")
+        data = client.get("/api/stats?year=2025&month=1").get_json()
+        assert data["week_elapsed_workdays"] == 3
+        assert data["week_target_so_far"] == 24.0  # 3 × 8h
+        assert data["week_difference"] == 24.0 - 24.0
