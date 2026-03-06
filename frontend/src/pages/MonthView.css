@@ -193,19 +193,26 @@
 }
 
 .cal-off-btn {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
-  padding: 0;
+  padding: 1px 3px;
   line-height: 1;
-  opacity: 0;
-  transition: opacity 0.1s, color 0.1s;
+  opacity: 0.3;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
   cursor: pointer;
+  user-select: none;
 }
-.cal-cell:hover .cal-off-btn { opacity: 0.5; }
-.cal-off-btn:hover { opacity: 1 !important; color: var(--red, #e05555); }
-.cal-off-btn-on { opacity: 1 !important; color: var(--red, #e05555); }
+.cal-cell:hover .cal-off-btn { opacity: 0.7; border-color: var(--border, #333); }
+.cal-off-btn:hover { opacity: 1 !important; color: var(--red, #e05555); border-color: var(--red, #e05555) !important; }
+.cal-off-btn-on {
+  opacity: 1 !important;
+  color: var(--red, #e05555);
+  border-color: var(--red, #e05555);
+  background: color-mix(in srgb, transparent 85%, var(--red, #e05555) 15%);
+}
 
 /* Punch panel */
 .punch-panel {
