@@ -2,7 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 
-from models import complete_entry, compute_hours, create_entry
+from models import complete_entry, compute_hours, create_entry, validate_time
 from storage import add_entry, delete_entry, get_entry, load_entries, update_entry
 
 entries_bp = Blueprint("entries", __name__)
@@ -51,6 +51,12 @@ def update(entry_id: str):
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
+
+    if "clock_in" in data and data["clock_in"] is not None and not validate_time(data["clock_in"]):
+        return jsonify({"error": f"Invalid time format: {data['clock_in']}. Use HH:MM."}), 400
+
+    if "clock_out" in data and data["clock_out"] is not None and not validate_time(data["clock_out"]):
+        return jsonify({"error": f"Invalid time format: {data['clock_out']}. Use HH:MM."}), 400
 
     # Punch-out: only clock_out supplied — derive clock_in from stored entry
     if "clock_out" in data and "clock_in" not in data:

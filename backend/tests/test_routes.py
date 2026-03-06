@@ -163,6 +163,12 @@ class TestPunchInOut:
         resp = client.put("/api/entries/fake-id", json={"clock_out": "16:00"})
         assert resp.status_code == 404
 
+    def test_punch_out_rejects_12h_format(self, client):
+        punch_resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        entry_id = punch_resp.get_json()["id"]
+        resp = client.put(f"/api/entries/{entry_id}", json={"clock_out": "04:00 PM"})
+        assert resp.status_code == 400
+
     def test_punch_out_before_punch_in(self, client):
         punch_resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
         entry_id = punch_resp.get_json()["id"]
@@ -179,6 +185,12 @@ class TestPunchInOut:
         assert data["clock_in"] == "09:00"
         assert data["clock_out"] is None
         assert data["hours"] is None
+
+    def test_edit_open_entry_rejects_12h_clock_in(self, client):
+        punch_resp = client.post("/api/entries", json={"date": "2025-03-10", "clock_in": "08:00"})
+        entry_id = punch_resp.get_json()["id"]
+        resp = client.put(f"/api/entries/{entry_id}", json={"clock_in": "09:00 AM", "clock_out": None})
+        assert resp.status_code == 400
 
 
 class TestStatsAPI:

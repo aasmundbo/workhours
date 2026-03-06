@@ -129,7 +129,12 @@ export default function MonthView() {
         <div className="cal-entries">
           {dayEntries.map((entry) => (
             <div key={entry.id} className={`cal-entry${!entry.clock_out ? ' cal-entry-open' : ''}`} onClick={(e) => handleEditClick(entry, e)}>
-              <span className="cal-entry-time">{entry.clock_in}{entry.clock_out ? `–${entry.clock_out}` : ' →'}</span>
+              <div className="cal-entry-left">
+                <span className="cal-entry-time">{entry.clock_in}{entry.clock_out ? `–${entry.clock_out}` : ' →'}</span>
+                {entry.note && (
+                  <span className="cal-entry-note" data-note={entry.note}>◆</span>
+                )}
+              </div>
               <button className="cal-entry-del" onClick={(e) => handleDeleteClick(entry, e)} title="Delete">×</button>
             </div>
           ))}

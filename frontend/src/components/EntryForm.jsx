@@ -51,14 +51,23 @@ export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
           <div className="entry-form-label">
             <span className="label-text">CLOCK IN</span>
             <div className="time-input-group">
-              <input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} required />
+              <input
+                type="time"
+                value={clockIn}
+                onChange={(e) => setClockIn(e.target.value)}
+                required
+              />
               <button type="button" className="btn-now" onClick={() => setClockIn(getNow())}>NOW</button>
             </div>
           </div>
           <div className="entry-form-label">
             <span className="label-text">CLOCK OUT <span className="label-optional">(OPTIONAL)</span></span>
             <div className="time-input-group">
-              <input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} />
+              <input
+                type="time"
+                value={clockOut}
+                onChange={(e) => setClockOut(e.target.value)}
+              />
               <button type="button" className="btn-now" onClick={() => setClockOut(getNow())}>NOW</button>
             </div>
           </div>

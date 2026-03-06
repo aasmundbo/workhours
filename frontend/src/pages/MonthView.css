@@ -119,6 +119,50 @@
   letter-spacing: 0.02em;
 }
 
+.cal-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.cal-entry-note {
+  color: var(--amber-dim);
+  font-size: 0.55rem;
+  flex-shrink: 0;
+  position: relative;
+  cursor: default;
+  line-height: 1;
+}
+
+.cal-entry-note::after {
+  content: attr(data-note);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber-dim);
+  color: var(--text-primary);
+  font-size: 0.65rem;
+  line-height: 1.4;
+  padding: 0.3rem 0.5rem;
+  white-space: pre-wrap;
+  max-width: 200px;
+  min-width: 80px;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.01em;
+}
+
+.cal-entry-note:hover::after {
+  opacity: 1;
+}
+
 .cal-entry-del {
   font-size: 0.85rem;
   color: var(--text-muted);

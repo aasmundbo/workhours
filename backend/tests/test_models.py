@@ -19,6 +19,7 @@ class TestValidateTime:
     def test_invalid_times(self):
         assert validate_time("25:00") is False
         assert validate_time("8:30") is False
+        assert validate_time("08:30 PM") is False
         assert validate_time("abc") is False
         assert validate_time("") is False
 
