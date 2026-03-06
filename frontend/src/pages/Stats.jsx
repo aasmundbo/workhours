@@ -63,6 +63,28 @@ export default function Stats() {
         </div>
       </div>
 
+      {/* Pace comparison: this week vs this month */}
+      <div className="pace-grid">
+        <div className="pace-card">
+          <div className="pace-label">THIS WEEK</div>
+          <div className={`pace-value ${stats.week_difference >= 0 ? 'pace-ahead' : 'pace-behind'}`}>
+            {stats.week_difference >= 0 ? '+' : '-'}{formatHours(Math.abs(stats.week_difference))}
+          </div>
+          <div className="pace-sub">
+            {stats.week_difference >= 0 ? 'ahead' : 'behind'} · {stats.week_elapsed_workdays}d elapsed
+          </div>
+        </div>
+        <div className="pace-card">
+          <div className="pace-label">THIS MONTH</div>
+          <div className={`pace-value ${stats.difference >= 0 ? 'pace-ahead' : 'pace-behind'}`}>
+            {stats.difference >= 0 ? '+' : '-'}{formatHours(Math.abs(stats.difference))}
+          </div>
+          <div className="pace-sub">
+            {stats.difference >= 0 ? 'ahead' : 'behind'} · {stats.elapsed_workdays}d elapsed
+          </div>
+        </div>
+      </div>
+
       {/* Key metrics */}
       <div className="metrics-grid">
         <div className="metric-card">

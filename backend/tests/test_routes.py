@@ -226,11 +226,14 @@ class TestStatsAPI:
         assert data["total_hours"] == 8.0
 
     def test_stats_empty_month(self, client):
+        """No completed entries → elapsed=0, expected=0, difference=0, on_track=True."""
         resp = client.get("/api/stats?year=2025&month=3")
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["total_hours"] == 0
-        assert data["on_track"] is False
+        assert data["elapsed_workdays"] == 0
+        assert data["difference"] == 0
+        assert data["on_track"] is True
 
     def test_stats_with_entries(self, client):
         # Add 5 days of 8h in March 2025 (first week)
@@ -257,3 +260,131 @@ class TestStatsAPI:
         data = resp.get_json()
         weeks_with_hours = [w for w in data["weekly"] if w["hours"] > 0]
         assert len(weeks_with_hours) == 2
+
+    # --- Week-level pace fields ---
+    # January 2025 is used for week tests: last day is Jan 31 (Friday),
+    # so the last ISO week 2025-W05 (Jan 27-31) is fully contained in January.
+    # elapsed_workdays / week_elapsed_workdays are capped at the last completed entry.
+
+    def test_stats_response_has_week_fields(self, client):
+        """Response includes all week-level pace fields."""
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        for key in ("week_difference", "week_total_hours", "week_elapsed_workdays",
+                    "week_target_so_far", "current_week"):
+            assert key in data, f"Missing key: {key}"
+
+    def test_week_current_key_past_month(self, client):
+        """For a past month the current_week is the ISO week of the last day."""
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        # Jan 31, 2025 (Friday) belongs to 2025-W05
+        assert data["current_week"] == "2025-W05"
+
+    def test_week_elapsed_workdays_capped_at_last_completed(self, client):
+        """week_elapsed_workdays reflects the last completed entry, not end-of-week."""
+        # Log Mon-Thu in 2025-W05; last completed = Jan 30 (Thu) → 4 elapsed days
+        for day in range(27, 31):  # Jan 27-30 (Mon-Thu)
+            _post_entry(client, date=f"2025-01-{day:02d}")
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_elapsed_workdays"] == 4
+        assert data["week_target_so_far"] == 32
+
+    def test_week_elapsed_workdays_full_week(self, client):
+        """All 5 days logged → 5 elapsed workdays and target of 40h."""
+        for day in range(27, 32):  # Jan 27-31, 2025 (Mon-Fri = W05)
+            _post_entry(client, date=f"2025-01-{day:02d}")
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_elapsed_workdays"] == 5
+        assert data["week_target_so_far"] == 40
+
+    def test_week_difference_no_entries(self, client):
+        """No completed entries → week_elapsed=0, expected=0, week_difference=0."""
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_total_hours"] == 0.0
+        assert data["week_elapsed_workdays"] == 0
+        assert data["week_difference"] == 0.0
+
+    def test_week_difference_fully_logged(self, client):
+        """5×8h entries in the last ISO week → week_difference=0."""
+        for day in range(27, 32):  # Jan 27-31, 2025 (Mon-Fri = 2025-W05)
+            _post_entry(client, date=f"2025-01-{day:02d}")
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_total_hours"] == 40.0
+        assert data["week_difference"] == 0.0
+
+    def test_week_difference_ahead(self, client):
+        """Logging more than 8h/day gives a positive week_difference."""
+        for day in range(27, 32):  # Mon-Fri 2025-W05
+            _post_entry(client, date=f"2025-01-{day:02d}", clock_in="08:00", clock_out="17:00")  # 9h each
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_total_hours"] == 45.0
+        assert data["week_difference"] == 5.0
+
+    def test_week_difference_behind(self, client):
+        """Logging less than 8h/day gives a negative week_difference."""
+        # 5h Mon + 8h Tue → 13h logged, 2 elapsed days, 16h expected → -3h
+        _post_entry(client, date="2025-01-27", clock_in="09:00", clock_out="14:00")  # 5h
+        _post_entry(client, date="2025-01-28", clock_in="09:00", clock_out="17:00")  # 8h
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_total_hours"] == 13.0
+        assert data["week_elapsed_workdays"] == 2
+        assert data["week_difference"] == -3.0
+
+    def test_week_open_entry_does_not_extend_elapsed(self, client):
+        """An open (punch-in only) entry on the next day does not advance week_elapsed_workdays."""
+        _post_entry(client, date="2025-01-27")  # completed Mon
+        # Open entry on Tue — should NOT push elapsed to 2
+        client.post("/api/entries", json={"date": "2025-01-28", "clock_in": "08:00"})
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        assert data["week_elapsed_workdays"] == 1
+        assert data["week_difference"] == 0.0  # 8h logged == 8h expected (1 day)
+
+    def test_month_elapsed_capped_at_last_completed_day(self, client):
+        """Month elapsed_workdays is capped at the last completed entry, not today/end-of-month."""
+        # Log only Mon-Wed of first week in March 2025 (Mar 3-5)
+        for day in range(3, 6):  # 3 days × 8h
+            _post_entry(client, date=f"2025-03-{day:02d}")
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        # last completed = Mar 5 (Wed) → 3 elapsed workdays, expected = 24h
+        assert data["elapsed_workdays"] == 3
+        assert data["expected_so_far"] == 24
+        assert data["difference"] == 0.0
+
+    def test_month_open_entry_does_not_extend_elapsed(self, client):
+        """An open entry after the last completed day does not advance elapsed_workdays."""
+        _post_entry(client, date="2025-03-03")  # completed Mon
+        client.post("/api/entries", json={"date": "2025-03-04", "clock_in": "08:00"})  # open Tue
+        data = client.get("/api/stats?year=2025&month=3").get_json()
+        assert data["elapsed_workdays"] == 1
+        assert data["difference"] == 0.0  # 8h logged == 8h expected
+
+    def test_week_total_hours_matches_weekly_list(self, client):
+        """week_total_hours in top-level stats matches the same week entry in 'weekly'."""
+        _post_entry(client, date="2025-01-27")
+        _post_entry(client, date="2025-01-28")
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        current_wk = data["current_week"]
+        matching = next((w for w in data["weekly"] if w["week"] == current_wk), None)
+        assert matching is not None
+        assert matching["hours"] == data["week_total_hours"]
+
+    def test_week_difference_unrelated_week_entries_excluded(self, client):
+        """Entries outside the reference week do not affect week_total_hours or week_elapsed."""
+        # Log hours in an earlier week only (2025-W01: Jan 2-3)
+        _post_entry(client, date="2025-01-02")
+        _post_entry(client, date="2025-01-03")
+        resp = client.get("/api/stats?year=2025&month=1")
+        data = resp.get_json()
+        # current_week is 2025-W05 (Jan 27-31); those entries are in W01
+        assert data["week_total_hours"] == 0.0
+        assert data["week_elapsed_workdays"] == 0
+        assert data["week_difference"] == 0.0

@@ -80,19 +80,66 @@ def get_stats():
     )
 
     today = datetime.now()
-    if today.year == year and today.month == month:
+
+    # Elapsed workdays: count up to the last day that has a completed entry
+    # (both clock_in and clock_out). Open/in-progress entries are excluded so
+    # an active punch-in does not falsely inflate the "expected" hours target.
+    completed_dates_month = sorted(
+        e["date"] for e in month_entries
+        if e.get("clock_in") and e.get("clock_out")
+    )
+    if completed_dates_month:
+        last_completed = datetime.strptime(completed_dates_month[-1], "%Y-%m-%d")
         elapsed_workdays = sum(
             1
-            for d in range(1, min(today.day, num_days) + 1)
+            for d in range(1, last_completed.day + 1)
             if datetime(year, month, d).weekday() < 5
         )
     else:
-        elapsed_workdays = total_workdays
+        elapsed_workdays = 0
 
     # Target: 40h/week ≈ 8h/workday
     target_hours = total_workdays * 8
     expected_so_far = elapsed_workdays * 8
     difference = total_hours - expected_so_far
+
+    # Week-level comparison: use current week if viewing current month,
+    # otherwise use the ISO week containing the last day of the viewed month.
+    if today.year == year and today.month == month:
+        ref_day = today
+    else:
+        ref_day = datetime(year, month, num_days)
+
+    current_week_key = _get_iso_week(ref_day.strftime("%Y-%m-%d"))
+
+    week_difference = 0.0
+    week_total_hours = 0.0
+    week_elapsed_workdays = 0
+    week_target_so_far = 0
+
+    if current_week_key in weeks:
+        w = weeks[current_week_key]
+        week_total_hours = w["hours"]
+        week_start = datetime.strptime(w["start"], "%Y-%m-%d")
+
+        # Count elapsed week days up to the last completed entry in this week.
+        week_completed_dates = sorted(
+            e["date"] for e in month_entries
+            if e.get("clock_in") and e.get("clock_out")
+            and _get_iso_week(e["date"]) == current_week_key
+        )
+        if week_completed_dates:
+            week_cutoff = datetime.strptime(week_completed_dates[-1], "%Y-%m-%d")
+            week_elapsed_workdays = sum(
+                1
+                for i in range(5)
+                if (week_start + timedelta(days=i)) <= week_cutoff
+            )
+        else:
+            week_elapsed_workdays = 0
+
+        week_target_so_far = week_elapsed_workdays * 8
+        week_difference = week_total_hours - week_target_so_far
 
     return jsonify({
         "year": year,
@@ -104,6 +151,11 @@ def get_stats():
         "on_track": difference >= 0,
         "total_workdays": total_workdays,
         "elapsed_workdays": elapsed_workdays,
+        "week_difference": round(week_difference, 2),
+        "week_total_hours": round(week_total_hours, 2),
+        "week_elapsed_workdays": week_elapsed_workdays,
+        "week_target_so_far": week_target_so_far,
+        "current_week": current_week_key,
         "daily": dict(sorted(daily.items())),
         "weekly": week_list,
     })

@@ -59,6 +59,43 @@
   margin-top: 0.15rem;
 }
 
+/* Pace comparison */
+.pace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.pace-card {
+  background: var(--bg-surface);
+  padding: 1rem 1.25rem;
+}
+
+.pace-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.pace-value {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pace-ahead { color: var(--green); }
+.pace-behind { color: var(--red); }
+
+.pace-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
 /* Metrics */
 .metrics-grid {
   display: grid;
