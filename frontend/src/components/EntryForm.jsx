@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import TimeInput from './TimeInput';
 import './EntryForm.css';
 
 function getNow() {
@@ -25,6 +26,15 @@ export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
+    const timeRe = /^\d{2}:\d{2}$/;
+    if (!clockIn || !timeRe.test(clockIn)) {
+      setError('Clock in time is required (HH:MM).');
+      return;
+    }
+    if (clockOut && !timeRe.test(clockOut)) {
+      setError('Clock out must be a valid time (HH:MM).');
+      return;
+    }
     if (clockOut && clockOut <= clockIn) {
       setError('Clock out must be after clock in.');
       return;
@@ -51,10 +61,9 @@ export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
           <div className="entry-form-label">
             <span className="label-text">CLOCK IN</span>
             <div className="time-input-group">
-              <input
-                type="time"
+              <TimeInput
                 value={clockIn}
-                onChange={(e) => setClockIn(e.target.value)}
+                onChange={setClockIn}
                 required
               />
               <button type="button" className="btn-now" onClick={() => setClockIn(getNow())}>NOW</button>
@@ -63,10 +72,9 @@ export default function EntryForm({ entry, date, onSave, onCancel, onDelete }) {
           <div className="entry-form-label">
             <span className="label-text">CLOCK OUT <span className="label-optional">(OPTIONAL)</span></span>
             <div className="time-input-group">
-              <input
-                type="time"
+              <TimeInput
                 value={clockOut}
-                onChange={(e) => setClockOut(e.target.value)}
+                onChange={setClockOut}
               />
               <button type="button" className="btn-now" onClick={() => setClockOut(getNow())}>NOW</button>
             </div>

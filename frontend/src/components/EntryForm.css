@@ -82,7 +82,7 @@
   align-items: stretch;
 }
 
-.time-input-group input[type='time'] {
+.time-input-group .time-input-24h {
   flex: 1;
   min-width: 0;
 }

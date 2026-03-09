@@ -40,7 +40,7 @@ Open **http://localhost:8080**
 ## Features
 
 - **Monthly calendar view** — Click any day to add entries, click entries to edit
-- **Easy in/out times** — Clock-in/out uses strict 24-hour `HH:MM` format
+- **Easy in/out times** — Dedicated 24-hour HH:MM input fields; use ↑ / ↓ arrow keys to increment or decrement hours and minutes, or type directly
 - **Stats page** — Weekly breakdown, daily average, and pace indicators showing whether you are ahead or behind for the current week and current month
 - **Off days** — Mark individual days as no-work (public holidays, leave). Off days are excluded from the expected hours target; any hours actually logged on those days still count toward your total
 - **Configurable schedule** — Set your contracted hours and working days per week via environment variables
@@ -100,8 +100,18 @@ Key response fields:
 
 After any code change, run the relevant test suite(s) and only consider the work complete when all tests pass.
 
+### Backend
+
 ```bash
 cd backend
 uv sync
 uv run pytest tests/ -v
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm test
 ```
