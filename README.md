@@ -28,6 +28,7 @@ Open `.env` and set your values:
 | `WORK_DAYS_PER_WEEK` | `5` | Working days per week (Mon onwards — `5`=Mon–Fri, `4`=Mon–Thu, etc.) |
 | `SECRET_KEY` | — | Secret key for signing session cookies |
 | `APP_PASSWORD_HASH` | — | Hash of your login password |
+| `DISABLE_AUTH` | `false` | Set to `true` to bypass authentication entirely (e.g. on a trusted local network) |
 
 Generate the two required security values and paste them into `.env`, wrapped in **single quotes** (prevents Docker Compose from misinterpreting the `$` characters in the hash):
 

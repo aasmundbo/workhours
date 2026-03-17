@@ -17,12 +17,13 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder="/app/frontend/dist", static_url_path="/")
 
     secret_key = os.environ.get("SECRET_KEY")
-    if not secret_key and not os.environ.get("PYTEST_CURRENT_TEST"):
+    auth_disabled = os.environ.get("DISABLE_AUTH") == "true"
+    if not secret_key and not auth_disabled and not os.environ.get("PYTEST_CURRENT_TEST"):
         raise RuntimeError(
             "SECRET_KEY environment variable is required. "
             "Generate one with: python3 -c \"import secrets; print(secrets.token_hex(32))\""
         )
-    app.secret_key = secret_key or "testing-only-key"
+    app.secret_key = secret_key or "auth-disabled-or-testing-key"
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(entries_bp)
@@ -33,6 +34,8 @@ def create_app() -> Flask:
     def require_auth():
         # Auth is bypassed during automated tests so existing tests need no changes.
         if app.config.get("TESTING"):
+            return None
+        if os.environ.get("DISABLE_AUTH") == "true":
             return None
         if not request.path.startswith("/api/"):
             return None
