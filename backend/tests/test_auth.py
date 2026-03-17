@@ -77,3 +77,25 @@ class TestAuthRoutes:
         with app.test_client() as c:
             resp = c.post("/api/auth/login", json={"password": "anything"})
             assert resp.status_code == 500
+
+
+class TestDisableAuth:
+    @pytest.fixture
+    def no_auth_client(self, tmp_path, monkeypatch):
+        """Test client with DISABLE_AUTH=true."""
+        data_file = str(tmp_path / "hours.json")
+        monkeypatch.setattr(storage, "DEFAULT_PATH", data_file)
+        monkeypatch.setenv("DISABLE_AUTH", "true")
+        monkeypatch.delenv("SECRET_KEY", raising=False)
+        app = create_app()
+        with app.test_client() as c:
+            yield c
+
+    def test_status_returns_authenticated_when_disabled(self, no_auth_client):
+        resp = no_auth_client.get("/api/auth/status")
+        assert resp.status_code == 200
+        assert resp.get_json() == {"authenticated": True}
+
+    def test_protected_route_accessible_without_login(self, no_auth_client):
+        resp = no_auth_client.get("/api/entries")
+        assert resp.status_code == 200

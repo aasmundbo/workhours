@@ -12,6 +12,7 @@ services:
       - DATA_FILE=/data/hours.json
       - SECRET_KEY
       - APP_PASSWORD_HASH
+      - DISABLE_AUTH
     restart: unless-stopped
 
   workhours-frontend:
