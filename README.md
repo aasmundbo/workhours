@@ -6,11 +6,8 @@ A self-hosted Docker web app for tracking your work hours when your employer doe
 
 ### 1. Create the data directory
 
-Hours are stored in `/data/hours.json` in the backend container. Data persists across rebuilds via a host bind mount:
-
-```bash
-mkdir -p ~/workhours
-```
+Hours are stored in `/data/hours.json` in the backend container. Data persists across rebuilds via a host
+bind mount from ./data on the host. No action necessary.
 
 ### 2. Configure your work schedule and set a password
 
@@ -55,7 +52,7 @@ APP_PASSWORD_HASH='scrypt:32768:8:1$...'
 docker compose up --build
 ```
 
-Open **<http://localhost:8080>**
+Open **<http://localhost:925>**
 
 ## Features
 
