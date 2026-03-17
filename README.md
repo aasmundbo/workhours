@@ -12,9 +12,9 @@ Hours are stored in `/data/hours.json` in the backend container. Data persists a
 mkdir -p ~/workhours
 ```
 
-### 2. Configure your work schedule
+### 2. Configure your work schedule and set a password
 
-Copy the default config and edit it to match your contract:
+Copy the config template and fill it in:
 
 ```bash
 cp .env.default .env
@@ -23,9 +23,28 @@ cp .env.default .env
 Open `.env` and set your values:
 
 | Variable | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `WORK_HOURS_PER_WEEK` | `40` | Total contracted hours per week |
 | `WORK_DAYS_PER_WEEK` | `5` | Working days per week (Mon onwards — `5`=Mon–Fri, `4`=Mon–Thu, etc.) |
+| `SECRET_KEY` | — | Secret key for signing session cookies |
+| `APP_PASSWORD_HASH` | — | Hash of your login password |
+
+Generate the two required security values and paste them into `.env`, wrapped in **single quotes** (prevents Docker Compose from misinterpreting the `$` characters in the hash):
+
+```bash
+# Generate a secret key
+python3 -c "import secrets; print(secrets.token_hex(32))"
+
+# Generate a password hash (replace 'yourpassword' with your chosen password)
+python3 -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('yourpassword'))"
+```
+
+Example entries in `.env`:
+
+```text
+SECRET_KEY='your-generated-key-here'
+APP_PASSWORD_HASH='scrypt:32768:8:1$...'
+```
 
 > `.env` is git-ignored. Never commit it.
 
@@ -35,7 +54,7 @@ Open `.env` and set your values:
 docker compose up --build
 ```
 
-Open **http://localhost:8080**
+Open **<http://localhost:8080>**
 
 ## Features
 
@@ -77,7 +96,7 @@ Open **http://localhost:8080**
 Key response fields:
 
 | Field | Description |
-|---|---|
+| --- | --- |
 | `total_hours` | Hours logged with both clock-in and clock-out |
 | `target_hours` | Contracted hours for the month (adjusted for off days) |
 | `expected_so_far` | Target pro-rated to the last completed workday |

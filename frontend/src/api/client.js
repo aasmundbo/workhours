@@ -2,6 +2,7 @@ const BASE = '/api';
 
 async function request(url, options = {}) {
   const res = await fetch(`${BASE}${url}`, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
@@ -42,4 +43,16 @@ export function addOffDay(date) {
 
 export function removeOffDay(date) {
   return request(`/off-days/${date}`, { method: 'DELETE' });
+}
+
+export function getAuthStatus() {
+  return request('/auth/status');
+}
+
+export function login(password) {
+  return request('/auth/login', { method: 'POST', body: JSON.stringify({ password }) });
+}
+
+export function logout() {
+  return request('/auth/logout', { method: 'POST' });
 }
