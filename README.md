@@ -21,6 +21,7 @@ Open `.env` and set your values:
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `DATA_FILE` | `/data/hours.json` | Path to the JSON data file inside the backend container |
 | `WORK_HOURS_PER_WEEK` | `40` | Total contracted hours per week |
 | `WORK_DAYS_PER_WEEK` | `5` | Working days per week (Mon onwards — `5`=Mon–Fri, `4`=Mon–Thu, etc.) |
 | `SECRET_KEY` | — | Secret key for signing session cookies |
