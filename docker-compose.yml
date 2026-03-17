@@ -1,5 +1,5 @@
 services:
-  backend:
+  workhours-backend:
     build: ./backend
     ports:
       - "5000:5000"
@@ -14,22 +14,22 @@ services:
       - APP_PASSWORD_HASH
     restart: unless-stopped
 
-  frontend:
+  workhours-frontend:
     build: ./frontend
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      - workhours-backend
     restart: unless-stopped
 
   # Nginx reverse proxy - serves frontend and proxies /api to backend
-  nginx:
+  workhours-nginx:
     image: nginx:alpine
     ports:
       - "925:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - backend
-      - frontend
+      - workhours-backend
+      - workhours-frontend
     restart: unless-stopped
