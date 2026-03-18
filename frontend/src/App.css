@@ -11,6 +11,8 @@
   padding: 1rem 2rem;
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .header-left {
@@ -74,4 +76,31 @@
 .nav-logout {
   background: none;
   cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .logo-sub {
+    display: none;
+  }
+
+  .header-nav {
+    width: 100%;
+  }
+
+  .nav-link {
+    flex: 1;
+    text-align: center;
+    padding: 0.4rem 0.25rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .app-main {
+    padding: 1rem;
+  }
 }
