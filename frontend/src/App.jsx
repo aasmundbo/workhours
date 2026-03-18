@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import MonthView from './pages/MonthView';
+import WeekView from './pages/WeekView';
 import Stats from './pages/Stats';
 import LoginPage from './pages/LoginPage';
 import { getAuthStatus, logout } from './api/client';
@@ -43,7 +44,10 @@ export default function App() {
           </div>
           <nav className="header-nav">
             <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              TIMESHEET
+              MONTH
+            </NavLink>
+            <NavLink to="/week" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              WEEK
             </NavLink>
             <NavLink to="/stats" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               STATS
@@ -56,6 +60,7 @@ export default function App() {
         <main className="app-main">
           <Routes>
             <Route path="/" element={<MonthView />} />
+            <Route path="/week" element={<WeekView />} />
             <Route path="/stats" element={<Stats />} />
           </Routes>
         </main>
