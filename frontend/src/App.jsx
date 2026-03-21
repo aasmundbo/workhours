@@ -43,10 +43,10 @@ export default function App() {
             <span className="logo-sub">WORK HOURS TRACKER</span>
           </div>
           <nav className="header-nav">
-            <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            <NavLink to="/month" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               MONTH
             </NavLink>
-            <NavLink to="/week" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               WEEK
             </NavLink>
             <NavLink to="/stats" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
@@ -59,8 +59,8 @@ export default function App() {
         </header>
         <main className="app-main">
           <Routes>
-            <Route path="/" element={<MonthView />} />
-            <Route path="/week" element={<WeekView />} />
+            <Route path="/" element={<WeekView />} />
+            <Route path="/month" element={<MonthView />} />
             <Route path="/stats" element={<Stats />} />
           </Routes>
         </main>
